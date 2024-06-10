@@ -4,32 +4,32 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 
+#include "include/main.h"
+#include "include/util.h"
+#include "include/image.h"
+
 #define WINDOW_W 640
 #define WINDOW_H 480
 #define FPS      60
 
+/* RGBA masks change depending on endianness */
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define MASK_R 0xFF000000
+#define MASK_G 0x00FF0000
+#define MASK_B 0x0000FF00
+#define MASK_A 0x000000FF
+#else
+#define MASK_R 0x000000FF
+#define MASK_G 0x0000FF00
+#define MASK_B 0x00FF0000
+#define MASK_A 0xFF000000
+#endif
+
 /*----------------------------------------------------------------------------*/
 /* Globals */
 
-static SDL_Window* g_window     = NULL;
-static SDL_Renderer* g_renderer = NULL;
-
-/*----------------------------------------------------------------------------*/
-/* Misc helper functions */
-
-static void die(const char* fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-
-    vfprintf(stderr, fmt, va);
-    putc('\n', stderr);
-
-    if (g_window != NULL)
-        SDL_DestroyWindow(g_window);
-
-    SDL_Quit();
-    exit(1);
-}
+SDL_Window* g_window     = NULL;
+SDL_Renderer* g_renderer = NULL;
 
 /*----------------------------------------------------------------------------*/
 /* SDL helper functions */
@@ -42,18 +42,43 @@ static inline void set_render_color(SDL_Renderer* rend, uint32_t col) {
     SDL_SetRenderDrawColor(rend, r, g, b, a);
 }
 
+static void draw_image(Image* image, SDL_Texture* texture, int center_x,
+                       int center_y) {
+    const SDL_Rect src_rect = {
+        0,
+        0,
+        image->w,
+        image->h,
+    };
+    const SDL_Rect dst_rect = {
+        center_x - (image->w / 2),
+        center_y - (image->h / 2),
+        image->w,
+        image->h,
+    };
+
+    SDL_RenderCopy(g_renderer, texture, &src_rect, &dst_rect);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Main function */
 
-int main(void) {
+int main(int argc, char** argv) {
+    if (argc < 2)
+        DIE("Usage: %s file.png", argv[0]);
+
+    const char* filename = argv[1];
+    Image* image         = image_read_file(filename);
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
-        die("Unable to start SDL.");
+        DIE("Unable to start SDL.");
 
     /* Create SDL window */
-    g_window = SDL_CreateWindow("TODO: Title", SDL_WINDOWPOS_CENTERED,
-                                SDL_WINDOWPOS_CENTERED, WINDOW_W, WINDOW_H, 0);
+    g_window =
+      SDL_CreateWindow("hl-png", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                       WINDOW_W, WINDOW_H, SDL_WINDOW_RESIZABLE);
     if (!g_window)
-        die("Error creating SDL window.");
+        DIE("Error creating SDL window.");
 
     /* Create SDL renderer */
     g_renderer =
@@ -61,8 +86,27 @@ int main(void) {
                          SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!g_renderer) {
         SDL_DestroyWindow(g_window);
-        die("Error creating SDL renderer.");
+        DIE("Error creating SDL renderer.");
     }
+
+#ifdef SCALE_QUALITY
+    /* Use the best scaling quality of the texture */
+    if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best") != SDL_TRUE)
+        DIE("Could not set RENDER_SCALE_QUALITY hint.");
+#endif
+
+    /* Create the surface and texture for the image */
+    SDL_Surface* image_surface =
+      SDL_CreateRGBSurfaceFrom(image->data, image->w, image->h,
+                               image_pixel_bits(image), image->byte_pitch,
+                               MASK_R, MASK_G, MASK_B, MASK_A);
+    if (!image_surface)
+        DIE("Error creating RGBA surface from PNG data.");
+
+    SDL_Texture* image_texture =
+      SDL_CreateTextureFromSurface(g_renderer, image_surface);
+    if (!image_texture)
+        DIE("Error creating texture from RGBA surface.");
 
     /* Main loop */
     bool running = true;
@@ -93,16 +137,23 @@ int main(void) {
         set_render_color(g_renderer, 0x000000);
         SDL_RenderClear(g_renderer);
 
-        /* TODO */
+        /* TODO: Draw background grid */
+
+        int win_w, win_h;
+        SDL_GetWindowSize(g_window, &win_w, &win_h);
+
+        draw_image(image, image_texture, win_w / 2, win_h / 2);
 
         /* Send to renderer and delay depending on FPS */
         SDL_RenderPresent(g_renderer);
         SDL_Delay(1000 / FPS);
     }
 
+    SDL_FreeSurface(image_surface);
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
     SDL_Quit();
+    image_free(image);
 
     return 0;
 }
