@@ -8,9 +8,11 @@
 #include "include/util.h"
 #include "include/image.h"
 
-#define WINDOW_W 640
-#define WINDOW_H 480
-#define FPS      60
+#define FPS 60
+
+#define GRID_STEP 10
+
+#define COLOR_GRID 0x111111
 
 /* RGBA masks change depending on endianness */
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -31,6 +33,8 @@
 SDL_Window* g_window     = NULL;
 SDL_Renderer* g_renderer = NULL;
 
+static bool g_draw_grid = true;
+
 /*----------------------------------------------------------------------------*/
 /* SDL helper functions */
 
@@ -40,6 +44,21 @@ static inline void set_render_color(SDL_Renderer* rend, uint32_t col) {
     const uint8_t b = (col >> 0) & 0xFF;
     const uint8_t a = 255;
     SDL_SetRenderDrawColor(rend, r, g, b, a);
+}
+
+static void draw_grid(void) {
+    if (!g_draw_grid)
+        return;
+
+    int win_w, win_h;
+    SDL_GetWindowSize(g_window, &win_w, &win_h);
+
+    const int step = GRID_STEP + 1;
+    for (int y = GRID_STEP; y < win_h; y += step)
+        SDL_RenderDrawLine(g_renderer, 0, y, win_w, y);
+
+    for (int x = GRID_STEP; x < win_w; x += step)
+        SDL_RenderDrawLine(g_renderer, x, 0, x, win_h);
 }
 
 static void draw_image(Image* image, SDL_Texture* texture, int center_x,
@@ -117,19 +136,27 @@ int main(int argc, char** argv) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
-                case SDL_QUIT:
+                case SDL_QUIT: {
                     running = false;
-                    break;
-                case SDL_KEYDOWN:
+                } break;
+
+                case SDL_KEYDOWN: {
                     switch (event.key.keysym.scancode) {
                         case SDL_SCANCODE_ESCAPE:
-                        case SDL_SCANCODE_Q:
+                        case SDL_SCANCODE_Q: {
                             running = false;
-                            break;
+
+                        } break;
+
+                        case SDL_SCANCODE_G: {
+                            g_draw_grid = !g_draw_grid;
+                        } break;
+
                         default:
                             break;
                     }
-                    break;
+                } break;
+
                 default:
                     break;
             }
@@ -139,7 +166,9 @@ int main(int argc, char** argv) {
         set_render_color(g_renderer, 0x000000);
         SDL_RenderClear(g_renderer);
 
-        /* TODO: Draw background grid */
+        /* Draw background grid */
+        set_render_color(g_renderer, COLOR_GRID);
+        draw_grid();
 
         int win_w, win_h;
         SDL_GetWindowSize(g_window, &win_w, &win_h);
