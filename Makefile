@@ -1,9 +1,9 @@
 
 CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic
-LDFLAGS=$(shell sdl2-config --cflags --libs)
+CFLAGS=-Wall -Wextra -Wpedantic -ggdb3
+LDFLAGS=-lpng $(shell sdl2-config --cflags --libs)
 
-OBJ_FILES=main.c.o
+OBJ_FILES=main.c.o image.c.o util.c.o
 OBJS=$(addprefix obj/, $(OBJ_FILES))
 
 BIN=hl-png
