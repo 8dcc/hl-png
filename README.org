@@ -1,26 +1,21 @@
-#+title: Title
+#+title: hl-png
 #+options: toc:nil
 #+startup: showeverything
 #+author: 8dcc
 
-#+begin_comment
-*TODO*: Change project-name and title
-*TODO*: Change output.out in Makefile
-#+end_comment
-
-*Short description.*
+*Highlight PNG image.*
 
 #+TOC: headlines 2
 
-* Description
-
-Long description.
+#+begin_comment
+TODO: Description, keybinds
+#+end_comment
 
 * Building
 
 #+begin_src console
-$ git clone https://github.com/8dcc/project-name
-$ cd project-name
+$ git clone https://github.com/8dcc/hl-png
+$ cd hl-png
 $ make
 ...
 #+end_src
