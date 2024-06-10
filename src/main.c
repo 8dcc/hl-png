@@ -74,9 +74,11 @@ int main(int argc, char** argv) {
         DIE("Unable to start SDL.");
 
     /* Create SDL window */
+    const int window_w = image->w;
+    const int window_h = image->h;
     g_window =
       SDL_CreateWindow("hl-png", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                       WINDOW_W, WINDOW_H, SDL_WINDOW_RESIZABLE);
+                       window_w, window_h, SDL_WINDOW_RESIZABLE);
     if (!g_window)
         DIE("Error creating SDL window.");
 
