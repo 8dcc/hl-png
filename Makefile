@@ -3,11 +3,10 @@ CC=gcc
 CFLAGS=-Wall -Wextra -Wpedantic
 LDFLAGS=$(shell sdl2-config --cflags --libs)
 
-# TODO: Add object files and rename
 OBJ_FILES=main.c.o
 OBJS=$(addprefix obj/, $(OBJ_FILES))
 
-BIN=output.out
+BIN=hl-png
 
 #-------------------------------------------------------------------------------
 
