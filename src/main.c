@@ -7,6 +7,7 @@
 #include "include/main.h"
 #include "include/util.h"
 #include "include/image.h"
+#include "include/drawing.h"
 
 #define FPS 60
 
@@ -135,6 +136,9 @@ int main(int argc, char** argv) {
     if (!image_texture)
         DIE("Error creating texture from RGBA surface.");
 
+    /* Allocate the main Drawing structure */
+    Drawing* drawing = drawing_new(image->w, image->h);
+
     /* Main loop */
     bool running = true;
     while (running) {
@@ -180,6 +184,13 @@ int main(int argc, char** argv) {
             }
         }
 
+        /* Get the mouse state, and check if the user is drawing */
+        /* TODO: Change colors, brush type, etc. */
+        int mouse_x, mouse_y;
+        uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y);
+        if (mouse_state & SDL_BUTTON_LMASK)
+            drawing_store_from_center(drawing, mouse_x, mouse_y, C(0xFF0000FF));
+
         /* Clear window */
         set_render_color(g_renderer, 0x000000);
         SDL_RenderClear(g_renderer);
@@ -190,6 +201,8 @@ int main(int argc, char** argv) {
 
         render_image(image, image_texture);
 
+        /* TODO: Render Drawing structure */
+
         /* Send to renderer and delay depending on FPS */
         SDL_RenderPresent(g_renderer);
         SDL_Delay(1000 / FPS);
@@ -199,6 +212,7 @@ int main(int argc, char** argv) {
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
     SDL_Quit();
+    drawing_free(drawing);
     image_free(image);
 
     return 0;
