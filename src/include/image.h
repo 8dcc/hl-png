@@ -12,12 +12,16 @@ typedef struct Image {
     int byte_pitch;
 } Image;
 
-/* Read a PNG file, and return a PngImage structure. Returned structure must be
+/* Read a PNG file, and return a Image structure. Returned structure must be
  * freed by the caller. */
 Image* image_read_file(const char* filename);
 
 /* Free an Image structure */
 void image_free(Image* image);
+
+/* Add an alpha channel for color types that don't have it, and update the color
+ * type. */
+void image_add_alpha(Image* image, png_structp png);
 
 /* Get the number of samples per pixel depending on the `color_type' of the
  * Image. */
