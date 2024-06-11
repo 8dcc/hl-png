@@ -33,7 +33,7 @@
 SDL_Window* g_window     = NULL;
 SDL_Renderer* g_renderer = NULL;
 
-static bool g_draw_grid = true;
+static bool g_render_grid = true;
 
 /*----------------------------------------------------------------------------*/
 /* SDL helper functions */
@@ -46,8 +46,9 @@ static inline void set_render_color(SDL_Renderer* rend, uint32_t col) {
     SDL_SetRenderDrawColor(rend, r, g, b, a);
 }
 
-static void draw_grid(void) {
-    if (!g_draw_grid)
+/* Render a subtle grid */
+static void render_grid(void) {
+    if (!g_render_grid)
         return;
 
     int win_w, win_h;
@@ -61,8 +62,13 @@ static void draw_grid(void) {
         SDL_RenderDrawLine(g_renderer, x, 0, x, win_h);
 }
 
-static void draw_image(Image* image, SDL_Texture* texture, int center_x,
-                       int center_y) {
+/* Render a texture, centered in the window */
+static void render_image(Image* image, SDL_Texture* texture) {
+    int win_w, win_h;
+    SDL_GetWindowSize(g_window, &win_w, &win_h);
+    const int center_x = win_w / 2;
+    const int center_y = win_h / 2;
+
     const SDL_Rect src_rect = {
         0,
         0,
@@ -149,7 +155,7 @@ int main(int argc, char** argv) {
                         } break;
 
                         case SDL_SCANCODE_G: {
-                            g_draw_grid = !g_draw_grid;
+                            g_render_grid = !g_render_grid;
                         } break;
 
                         case SDL_SCANCODE_F11:
@@ -180,12 +186,9 @@ int main(int argc, char** argv) {
 
         /* Draw background grid */
         set_render_color(g_renderer, COLOR_GRID);
-        draw_grid();
+        render_grid();
 
-        int win_w, win_h;
-        SDL_GetWindowSize(g_window, &win_w, &win_h);
-
-        draw_image(image, image_texture, win_w / 2, win_h / 2);
+        render_image(image, image_texture);
 
         /* Send to renderer and delay depending on FPS */
         SDL_RenderPresent(g_renderer);

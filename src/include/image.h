@@ -12,6 +12,8 @@ typedef struct Image {
     int byte_pitch;
 } Image;
 
+/*----------------------------------------------------------------------------*/
+
 /* Read a PNG file, and return a Image structure. Returned structure must be
  * freed by the caller. */
 Image* image_read_file(const char* filename);
