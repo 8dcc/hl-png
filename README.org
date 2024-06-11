@@ -7,11 +7,24 @@
 
 #+TOC: headlines 2
 
-#+begin_comment
-TODO: Description, keybinds
-#+end_comment
+* Description
+
+This simple program allows you to open a PNG image and draw/highlight any
+region.
 
 * Building
+
+You will need to install the =SDL2= and =libpng= libraries.
+
+#+begin_src console
+# On debian-based distros
+$ apt install libsdl2-dev libpng-dev
+
+# On arch-based distros
+$ pacman -S sdl2 libpng
+#+end_src
+
+Then, you can build the project.
 
 #+begin_src console
 $ git clone https://github.com/8dcc/hl-png
