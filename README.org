@@ -16,19 +16,18 @@ region.
 
 You will need to install the =SDL2= and =libpng= libraries.
 
-#+begin_src console
+#+begin_src bash
 # On debian-based distros
-$ apt install libsdl2-dev libpng-dev
+apt install libsdl2-dev libpng-dev
 
 # On arch-based distros
-$ pacman -S sdl2 libpng
+pacman -S sdl2 libpng
 #+end_src
 
 Then, you can build the project.
 
-#+begin_src console
-$ git clone https://github.com/8dcc/hl-png
-$ cd hl-png
-$ make
-...
+#+begin_src bash
+git clone https://github.com/8dcc/hl-png
+cd hl-png
+make
 #+end_src
