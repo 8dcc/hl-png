@@ -2,6 +2,8 @@
 #ifndef UTIL_H_
 #define UTIL_H_ 1
 
+#define ABS(X) ((X) < 0 ? -(X) : (X))
+
 /* Wrapper for `die_func' */
 #define DIE(...) die_func(__func__, __VA_ARGS__)
 

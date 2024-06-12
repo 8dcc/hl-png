@@ -7,6 +7,7 @@
 #include "include/main.h"
 #include "include/util.h"
 #include "include/image.h"
+#include "include/drawing.h"
 
 #define FPS 60
 
@@ -34,6 +35,7 @@ SDL_Window* g_window     = NULL;
 SDL_Renderer* g_renderer = NULL;
 
 static bool g_render_grid = true;
+static bool g_drawing     = false;
 
 /*----------------------------------------------------------------------------*/
 /* SDL helper functions */
@@ -83,6 +85,55 @@ static void render_image(Image* image, SDL_Texture* texture) {
     };
 
     SDL_RenderCopy(g_renderer, texture, &src_rect, &dst_rect);
+}
+
+/* Render a line using `Drawing.points', from `start_idx' to `end_idx'
+ * (inclusive). */
+static void render_drawing_line(Drawing* drawing, int start_idx, int end_idx) {
+    int win_w, win_h;
+    SDL_GetWindowSize(g_window, &win_w, &win_h);
+    const int center_x = win_w / 2;
+    const int center_y = win_h / 2;
+
+    for (int i = start_idx + 1; i <= end_idx; i++) {
+        DrawingPoint a = drawing->points[i - 1];
+        DrawingPoint b = drawing->points[i];
+        Color col      = a.col;
+
+        /* Since the points are stored relative to the center of the window,
+         * we convert them to the absolute positions here. */
+        const int src_x = center_x + a.x;
+        const int src_y = center_y + a.y;
+        const int dst_x = center_x + b.x;
+        const int dst_y = center_y + b.y;
+
+        SDL_SetRenderDrawColor(g_renderer, col.r, col.g, col.b, col.a);
+        SDL_RenderDrawLine(g_renderer, src_x, src_y, dst_x, dst_y);
+    }
+}
+
+/* Render a drawing, centered in the window */
+static void render_drawing(Drawing* drawing) {
+    /* Iterate each line in the drawing */
+    for (int line = 1; line <= drawing->line_count; line++) {
+        /* The first line starts at point zero, rest start at the point next to
+         * where the previous line ended. */
+        const int start_idx =
+          (line == 1) ? 0 : drawing->line_ends[line - 1] + 1;
+        const int end_idx = drawing->line_ends[line];
+
+        render_drawing_line(drawing, start_idx, end_idx);
+    }
+
+    /* If we are currently drawing a line, it's not stored in
+     * `Drawing.line_ends' yet. */
+    const int last_line_end = drawing->line_ends[drawing->line_count];
+    if (drawing->points_i > last_line_end + 1) {
+        const int start_idx = last_line_end + 1;
+        const int end_idx   = drawing->points_i - 1;
+
+        render_drawing_line(drawing, start_idx, end_idx);
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -135,6 +186,9 @@ int main(int argc, char** argv) {
     if (!image_texture)
         DIE("Error creating texture from RGBA surface.");
 
+    /* Allocate the main Drawing structure */
+    Drawing* drawing = drawing_new();
+
     /* Main loop */
     bool running = true;
     while (running) {
@@ -151,7 +205,6 @@ int main(int argc, char** argv) {
                         case SDL_SCANCODE_ESCAPE:
                         case SDL_SCANCODE_Q: {
                             running = false;
-
                         } break;
 
                         case SDL_SCANCODE_G: {
@@ -175,6 +228,45 @@ int main(int argc, char** argv) {
                     }
                 } break;
 
+                case SDL_MOUSEBUTTONDOWN: {
+                    switch (event.button.button) {
+                        case SDL_BUTTON_LEFT: {
+                            /* TODO: Change colors, brush type, etc. */
+                            g_drawing = true;
+
+                            /* Store first point of the drawing. Next ones will
+                             * be stored in SDL_MOUSEMOTION. */
+                            drawing_store_from_center(drawing, event.motion.x,
+                                                      event.motion.y,
+                                                      C(0xFF0000FF));
+                        } break;
+
+                        default:
+                            break;
+                    }
+                } break;
+
+                case SDL_MOUSEBUTTONUP: {
+                    switch (event.button.button) {
+                        case SDL_BUTTON_LEFT: {
+                            /* Released click, end the line we were drawing */
+                            g_drawing = false;
+                            drawing_end_line(drawing);
+                        } break;
+
+                        default:
+                            break;
+                    }
+                } break;
+
+                case SDL_MOUSEMOTION: {
+                    if (!g_drawing)
+                        break;
+
+                    drawing_store_from_center(drawing, event.motion.x,
+                                              event.motion.y, C(0xFF0000FF));
+                } break;
+
                 default:
                     break;
             }
@@ -190,15 +282,19 @@ int main(int argc, char** argv) {
 
         render_image(image, image_texture);
 
+        render_drawing(drawing);
+
         /* Send to renderer and delay depending on FPS */
         SDL_RenderPresent(g_renderer);
         SDL_Delay(1000 / FPS);
     }
 
+    SDL_DestroyTexture(image_texture);
     SDL_FreeSurface(image_surface);
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
     SDL_Quit();
+    drawing_free(drawing);
     image_free(image);
 
     return 0;
