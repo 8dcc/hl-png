@@ -5,60 +5,86 @@
 #include "include/util.h"
 #include "include/drawing.h"
 
-static void realloc_from_center(Drawing* drawing, int new_w, int new_h) {
-    const int old_w = drawing->w;
-    const int old_h = drawing->h;
-
-    int x_offset = 0;
-    int y_offset = 0;
-
-    /* Calculate difference between old width and height. If it's positive,
-     * calculate the offsets for centering, and update the values in the
-     * Drawing. */
-    const int w_diff = new_w - old_w;
-    if (w_diff > 0) {
-        x_offset   = w_diff / 2;
-        drawing->w = new_w;
-    }
-
-    const int h_diff = new_h - old_h;
-    if (h_diff > 0) {
-        y_offset   = h_diff / 2;
-        drawing->h = new_h;
-    }
-
-    /* Width and height probably changed, recalculate total size and allocate
-     * new array. */
-    const size_t new_sz = drawing->w * drawing->h;
-    Color* new_data     = calloc(new_sz, sizeof(Color));
-
-    /* Copy the old array, adding the X and Y offsets */
-    for (int y = 0; y < old_h; y++) {
-        for (int x = 0; x < old_w; x++) {
-            const int new_idx = drawing->w * (y + y_offset) + (x + x_offset);
-            const int old_idx = old_w * y + x;
-            new_data[new_idx] = drawing->data[old_idx];
-        }
-    }
-
-    /* Update the `data' pointer in the Drawing */
-    free(drawing->data);
-    drawing->data = new_data;
-}
-
-/*----------------------------------------------------------------------------*/
-
-Drawing* drawing_new(int w, int h) {
+Drawing* drawing_new(void) {
     Drawing* drawing = malloc(sizeof(Drawing));
-    drawing->w       = w;
-    drawing->h       = h;
-    drawing->data    = calloc(drawing->w * drawing->h, sizeof(Color));
+
+    drawing->points_sz = DRAWING_POINTS_SIZE;
+    drawing->points    = calloc(drawing->points_sz, sizeof(DrawingPoint));
+    drawing->points_i  = 0;
+
+    drawing->line_ends_sz = DRAWING_LINES_SIZE;
+    drawing->line_ends    = calloc(drawing->line_ends_sz, sizeof(int));
+    drawing->line_count   = 0;
+
     return drawing;
 }
 
 void drawing_free(Drawing* drawing) {
-    free(drawing->data);
+    free(drawing->points);
+    free(drawing->line_ends);
     free(drawing);
+}
+
+void drawing_push(Drawing* drawing, DrawingPoint point) {
+    /* If there is no space left, reallocate */
+    if (drawing->points_i >= drawing->points_sz) {
+        drawing->points_sz += DRAWING_POINTS_SIZE;
+        drawing->points =
+          realloc(drawing->points, drawing->points_sz * sizeof(DrawingPoint));
+    }
+
+    /*
+     * Push to the DrawingPoint stack.
+     *
+     * NOTE: We could avoid using `Drawing.points_i', by using the
+     * `Drawing.line_ends' array along with `Drawing.line_count' directly.
+     * However, it was harder to understand, and I don't think it's worth it.
+     */
+    drawing->points[drawing->points_i++] = point;
+}
+
+void drawing_end_line(Drawing* drawing) {
+    /* If the `Drawing.line_ends' array is not big enough to hold the next line,
+     * reallocate */
+    if (drawing->line_count >= drawing->line_ends_sz) {
+        drawing->line_ends_sz += DRAWING_LINES_SIZE;
+        drawing->line_ends =
+          realloc(drawing->line_ends, drawing->line_ends_sz * sizeof(int));
+    }
+
+    /* Should never happen */
+    if (drawing->points_i <= 0)
+        return;
+
+    /*
+     * The drawing starts like this:
+     *
+     *     line_ends: [0, ...]
+     *     line_count: 0
+     *
+     * After the first call to `drawing_end_line', the count increases and the
+     * array stores the last point.
+     *
+     *     line_ends: [0, 15, ...]
+     *     line_count: 1
+     *
+     * Now we have a line from 0 to 15. The first item should always be zero,
+     * and indicates the start of a line. They update in the next call:
+     *
+     *     line_ends: [0, 15, 21, ...]
+     *     line_count: 2
+     *
+     * Now we have a line from 0 to 15, and a line from 16 to 21. The 15th and
+     * 16th point won't be connected when rendering.
+     */
+
+    /* Increase the number of lines we have drawn */
+    drawing->line_count++;
+
+    /* Store the last index of `Drawing.points' where the last line ended. Keep
+     * in mind that `Drawing.points_i' points to the index for the next
+     * insertion, not the index of the last one. */
+    drawing->line_ends[drawing->line_count] = drawing->points_i - 1;
 }
 
 void drawing_store_from_center(Drawing* drawing, int x, int y, Color col) {
@@ -80,22 +106,11 @@ void drawing_store_from_center(Drawing* drawing, int x, int y, Color col) {
     const int win_rel_x    = x - win_center_x;
     const int win_rel_y    = y - win_center_y;
 
-    /* Get central position of the array */
-    const int arr_center_x = drawing->w / 2;
-    const int arr_center_y = drawing->h / 2;
+    DrawingPoint point = {
+        .x   = win_rel_x,
+        .y   = win_rel_y,
+        .col = col,
+    };
 
-    /* Minimum width and height that the array must have to include `arr_rel_x'
-     * and `arr_rel_y'. */
-    const int min_w = arr_center_x + (ABS(win_rel_x) * 2);
-    const int min_h = arr_center_y + (ABS(win_rel_y) * 2);
-
-    /* If the position is out of bounds, reallocate the array */
-    if (drawing->w < min_w || drawing->h < min_h)
-        realloc_from_center(drawing, min_w, min_h);
-
-    /* Get the real array positions */
-    const int arr_x = arr_center_x + win_rel_x;
-    const int arr_y = arr_center_y + win_rel_y;
-
-    drawing->data[drawing->w * arr_y + arr_x] = col;
+    drawing_push(drawing, point);
 }
