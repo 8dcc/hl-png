@@ -3,6 +3,7 @@
 #define DRAWING_H_ 1
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Initial value for `Drawing.points_sz', will also be used for resizing
  * `Drawing.points' when needed. */
@@ -63,6 +64,10 @@ void drawing_free(Drawing* drawing);
 /* Push a point to the `drawing->points' stack */
 void drawing_push(Drawing* drawing, DrawingPoint point);
 
+/* Return true if the last point in the `Drawing.points' stack is not within an
+ * ended line. Checks against the `Drawing.line_ends' array. */
+bool drawing_in_progress(Drawing* drawing);
+
 /* Store that the current line in the drawing has ended. The next points will
  * belong to a different line. */
 void drawing_end_line(Drawing* drawing);
@@ -70,5 +75,9 @@ void drawing_end_line(Drawing* drawing);
 /* Store the user click in absolute position (X,Y) into the specified Drawing,
  * relative to the center of the window. */
 void drawing_store_from_center(Drawing* drawing, int x, int y, Color col);
+
+/* Clear the specified drawing by resetting the point and line stack positions
+ * to zero. */
+void drawing_clear(Drawing* drawing);
 
 #endif /* DRAWING_H_ */

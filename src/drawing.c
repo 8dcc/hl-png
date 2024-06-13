@@ -43,7 +43,20 @@ void drawing_push(Drawing* drawing, DrawingPoint point) {
     drawing->points[drawing->points_i++] = point;
 }
 
+bool drawing_in_progress(Drawing* drawing) {
+    const int last_line_end = drawing->line_ends[drawing->line_count];
+    return drawing->points_i > last_line_end + 1;
+}
+
 void drawing_end_line(Drawing* drawing) {
+    /* Should never happen */
+    if (drawing->points_i <= 0)
+        return;
+
+    /* We are not drawing, there is no line to end */
+    if (!drawing_in_progress(drawing))
+        return;
+
     /* If the `Drawing.line_ends' array is not big enough to hold the next line,
      * reallocate */
     if (drawing->line_count >= drawing->line_ends_sz) {
@@ -51,10 +64,6 @@ void drawing_end_line(Drawing* drawing) {
         drawing->line_ends =
           realloc(drawing->line_ends, drawing->line_ends_sz * sizeof(int));
     }
-
-    /* Should never happen */
-    if (drawing->points_i <= 0)
-        return;
 
     /*
      * The drawing starts like this:
@@ -113,4 +122,9 @@ void drawing_store_from_center(Drawing* drawing, int x, int y, Color col) {
     };
 
     drawing_push(drawing, point);
+}
+
+void drawing_clear(Drawing* drawing) {
+    drawing->points_i   = 0;
+    drawing->line_count = 0;
 }

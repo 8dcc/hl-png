@@ -35,7 +35,9 @@ SDL_Window* g_window     = NULL;
 SDL_Renderer* g_renderer = NULL;
 
 static bool g_render_grid = true;
-static bool g_drawing     = false;
+
+static bool g_drawing          = false; /* Holding LMouse */
+static bool g_on_straight_mode = false; /* Holding Ctrl */
 
 /*----------------------------------------------------------------------------*/
 /* SDL helper functions */
@@ -127,9 +129,8 @@ static void render_drawing(Drawing* drawing) {
 
     /* If we are currently drawing a line, it's not stored in
      * `Drawing.line_ends' yet. */
-    const int last_line_end = drawing->line_ends[drawing->line_count];
-    if (drawing->points_i > last_line_end + 1) {
-        const int start_idx = last_line_end + 1;
+    if (drawing_in_progress(drawing)) {
+        const int start_idx = drawing->line_ends[drawing->line_count] + 1;
         const int end_idx   = drawing->points_i - 1;
 
         render_drawing_line(drawing, start_idx, end_idx);
@@ -207,8 +208,17 @@ int main(int argc, char** argv) {
                             running = false;
                         } break;
 
+                        case SDL_SCANCODE_LCTRL:
+                        case SDL_SCANCODE_RCTRL: {
+                            g_on_straight_mode = true;
+                        } break;
+
                         case SDL_SCANCODE_G: {
                             g_render_grid = !g_render_grid;
+                        } break;
+
+                        case SDL_SCANCODE_C: {
+                            drawing_clear(drawing);
                         } break;
 
                         case SDL_SCANCODE_F11:
@@ -221,6 +231,22 @@ int main(int argc, char** argv) {
                                 : SDL_WINDOW_FULLSCREEN_DESKTOP;
 
                             SDL_SetWindowFullscreen(g_window, new_flags);
+                        } break;
+
+                        default:
+                            break;
+                    }
+                } break;
+
+                case SDL_KEYUP: {
+                    switch (event.key.keysym.scancode) {
+                        case SDL_SCANCODE_LCTRL:
+                        case SDL_SCANCODE_RCTRL: {
+                            /* Try to end the line when releasing Ctrl. The
+                             * function checks if there is a line to end. */
+                            drawing_end_line(drawing);
+
+                            g_on_straight_mode = false;
                         } break;
 
                         default:
@@ -251,7 +277,9 @@ int main(int argc, char** argv) {
                         case SDL_BUTTON_LEFT: {
                             /* Released click, end the line we were drawing */
                             g_drawing = false;
-                            drawing_end_line(drawing);
+
+                            if (!g_on_straight_mode)
+                                drawing_end_line(drawing);
                         } break;
 
                         default:
