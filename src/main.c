@@ -130,7 +130,9 @@ static void render_drawing(Drawing* drawing) {
     /* If we are currently drawing a line, it's not stored in
      * `Drawing.line_ends' yet. */
     if (drawing_in_progress(drawing)) {
-        const int start_idx = drawing->line_ends[drawing->line_count] + 1;
+        const int start_idx = (drawing->line_count == 0)
+                                ? 0
+                                : drawing->line_ends[drawing->line_count] + 1;
         const int end_idx   = drawing->points_i - 1;
 
         render_drawing_line(drawing, start_idx, end_idx);
