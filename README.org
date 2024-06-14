@@ -12,6 +12,16 @@
 This simple program allows you to open a PNG image and draw/highlight any
 region.
 
+* Keybinds
+
+| Key    | Description                  |
+|--------+------------------------------|
+| ~LMouse~ | Draw in the window           |
+| ~Ctrl~   | If held, join lines together |
+| ~c~      | Clear the drawing            |
+| ~g~      | Toggle the background grid   |
+| ~f~, ~F11~ | Toggle full-screen           |
+
 * Building
 
 You will need to install the =SDL2= and =libpng= libraries.
