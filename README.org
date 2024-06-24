@@ -12,7 +12,18 @@
 This simple program allows you to open a PNG image and draw/highlight any
 region.
 
-* Keybinds
+* Arguments and keybinds
+
+The program expects an optional list of arguments, followed by a filename as its
+*last* argument. These are the supported arguments.
+
+| Argument | Description                                                                                                     |
+|----------+-----------------------------------------------------------------------------------------------------------------|
+| ~-f~       | Launch the program in full-screen mode                                                                          |
+| ~-F~       | Launch the program in /fixed/ mode (i.e. the window is not resizable). Might be useful for tiling window managers |
+| ~-h~       | Show help and exit                                                                                              |
+
+From the program window, the following keybinds can be used.
 
 | Key    | Description                  |
 |--------+------------------------------|
