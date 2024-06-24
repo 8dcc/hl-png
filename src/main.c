@@ -144,20 +144,64 @@ static void render_drawing(Drawing* drawing) {
 
 int main(int argc, char** argv) {
     if (argc < 2)
-        DIE("Usage: %s file.png", argv[0]);
+        DIE("Usage: %s [...] file.png", argv[0]);
 
-    const char* filename = argv[1];
+    /* Parse arguments */
+    bool arg_fullscreen = false;
+    bool arg_fixed      = false;
+    for (int i = 1; i < argc - 1; i++) {
+        if (argv[i][0] != '-')
+            continue;
+
+        for (int j = 1; argv[i][j] != '\0'; j++) {
+            switch (argv[i][j]) {
+                case 'f': {
+                    arg_fullscreen = true;
+                } break;
+
+                case 'F': {
+                    arg_fixed = true;
+                } break;
+
+                case 'h': {
+                    printf("Usage:\n"
+                           "  %s [-fF] file.png\n"
+                           "Arguments:\n"
+                           "  -f\tLaunch in full-screen mode.\n"
+                           "  -F\tLaunch in fixed mode.\n"
+                           "  -h\tPrint this help and exit.\n",
+                           argv[0]);
+                    exit(0);
+                } break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    /* Last argument must be the image path */
+    const char* filename = argv[argc - 1];
     Image* image         = image_read_file(filename);
 
+    /*------------------------------------------------------------------------*/
+    /* SDL initialization */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
         DIE("Unable to start SDL.");
+
+    /* Use different window flags depending on arguments */
+    int window_flags = 0;
+    if (arg_fullscreen)
+        window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    if (!arg_fixed)
+        window_flags |= SDL_WINDOW_RESIZABLE;
 
     /* Create SDL window */
     const int window_w = image->w;
     const int window_h = image->h;
     g_window =
       SDL_CreateWindow("hl-png", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                       window_w, window_h, SDL_WINDOW_RESIZABLE);
+                       window_w, window_h, window_flags);
     if (!g_window)
         DIE("Error creating SDL window.");
 
@@ -192,6 +236,7 @@ int main(int argc, char** argv) {
     /* Allocate the main Drawing structure */
     Drawing* drawing = drawing_new();
 
+    /*------------------------------------------------------------------------*/
     /* Main loop */
     bool running = true;
     while (running) {
