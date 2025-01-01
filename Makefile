@@ -1,7 +1,7 @@
 
 CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic -ggdb3
-LDFLAGS=-lpng $(shell sdl2-config --cflags --libs)
+CFLAGS=-Wall -Wextra -Wpedantic -ggdb3 $(shell sdl2-config --cflags)
+LDLIBS=-lpng $(shell sdl2-config --libs)
 
 SRC=main.c util.c image.c drawing.c
 OBJ=$(addprefix obj/, $(addsuffix .o, $(SRC)))
@@ -27,7 +27,7 @@ install: $(BIN)
 #-------------------------------------------------------------------------------
 
 $(BIN): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 obj/%.c.o : src/%.c
 	@mkdir -p $(dir $@)
