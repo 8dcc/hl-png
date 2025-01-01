@@ -3,29 +3,30 @@ CC=gcc
 CFLAGS=-Wall -Wextra -Wpedantic -ggdb3
 LDFLAGS=-lpng $(shell sdl2-config --cflags --libs)
 
-OBJ_FILES=main.c.o util.c.o image.c.o drawing.c.o
-OBJS=$(addprefix obj/, $(OBJ_FILES))
+SRC=main.c util.c image.c drawing.c
+OBJ=$(addprefix obj/, $(addsuffix .o, $(SRC)))
 
-INSTALL_DIR=/usr/local/bin
 BIN=hl-png
+
+PREFIX=/usr/local
+BINDIR=$(PREFIX)/bin
 
 #-------------------------------------------------------------------------------
 
-.PHONY: clean all install
+.PHONY: all clean install
 
 all: $(BIN)
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJ)
 	rm -f $(BIN)
 
 install: $(BIN)
-	mkdir -p $(INSTALL_DIR)
-	install -m 755 $(BIN) $(INSTALL_DIR)/$(BIN)
+	install -D -m 755 $(BIN) -t $(DESTDIR)$(BINDIR)
 
 #-------------------------------------------------------------------------------
 
-$(BIN): $(OBJS)
+$(BIN): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 obj/%.c.o : src/%.c
