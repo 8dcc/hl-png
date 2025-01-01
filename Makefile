@@ -22,7 +22,7 @@ clean:
 	rm -f $(BIN)
 
 install: $(BIN)
-	install -D -m 755 $(BIN) -t $(DESTDIR)$(BINDIR)
+	install -D -m 755 $^ -t $(DESTDIR)$(BINDIR)
 
 #-------------------------------------------------------------------------------
 
